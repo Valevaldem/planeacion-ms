@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import Minutas from "@/components/Minutas";
 import { ChevronLeft, ChevronRight, Plus, X, Star, Clock, CheckSquare, Users, Calendar as CalIcon, List, Trash2, Pencil, Filter, Check, Tag, Megaphone, Hammer, Truck, ShoppingBag, PartyPopper, Cpu, Briefcase, Gem, Camera, Sparkles, Package, Wrench, Flag, Globe, Heart, Bookmark } from "lucide-react";
 
 const GOLD = "#B08D57", CREAM = "#F5F0E8", DARK = "#2A2A2A";
@@ -234,35 +235,40 @@ export default function Planner() {
           <div className="flex rounded-xl overflow-hidden" style={{ border:`1px solid ${GOLD}55` }}>
             <button onClick={()=>setView("calendar")} className={btn+" flex items-center gap-1"} style={{ background:view==="calendar"?GOLD:"#fff", color:view==="calendar"?"#fff":DARK }}><CalIcon size={15} /> Calendario</button>
             <button onClick={()=>setView("list")} className={btn+" flex items-center gap-1"} style={{ background:view==="list"?GOLD:"#fff", color:view==="list"?"#fff":DARK }}><List size={15} /> Lista</button>
+            <button onClick={()=>setView("minutas")} className={btn+" flex items-center gap-1"} style={{ background:view==="minutas"?GOLD:"#fff", color:view==="minutas"?"#fff":DARK }}><Bookmark size={15} /> Minutas</button>
           </div>
           <button onClick={()=>setThemeModal(true)} className={btn+" flex items-center gap-1"} style={{ background:"#fff", color:DARK, border:`1px solid ${GOLD}55` }}><Tag size={15} /> Temas</button>
           <button onClick={()=>setTeamModal(true)} className={btn+" flex items-center gap-1"} style={{ background:"#fff", color:DARK, border:`1px solid ${GOLD}55` }}><Users size={15} /> Equipo</button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <button onClick={()=>shift(-1)} className="rounded-lg p-2" style={{ background:"#fff", border:`1px solid ${GOLD}55` }}><ChevronLeft size={16} color={DARK} /></button>
-          <span className="font-semibold text-sm" style={{ color:DARK }}>{rangeLabel}</span>
-          <button onClick={()=>shift(1)} className="rounded-lg p-2" style={{ background:"#fff", border:`1px solid ${GOLD}55` }}><ChevronRight size={16} color={DARK} /></button>
-          <button onClick={()=>{ setStartY(new Date().getFullYear()); setStartM(new Date().getMonth()); }} className="rounded-lg px-2 py-2 text-xs" style={{ background:"#fff", border:`1px solid ${GOLD}55`, color:GOLD }}>Hoy</button>
+      {view !== "minutas" && (
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <button onClick={()=>shift(-1)} className="rounded-lg p-2" style={{ background:"#fff", border:`1px solid ${GOLD}55` }}><ChevronLeft size={16} color={DARK} /></button>
+            <span className="font-semibold text-sm" style={{ color:DARK }}>{rangeLabel}</span>
+            <button onClick={()=>shift(1)} className="rounded-lg p-2" style={{ background:"#fff", border:`1px solid ${GOLD}55` }}><ChevronRight size={16} color={DARK} /></button>
+            <button onClick={()=>{ setStartY(new Date().getFullYear()); setStartM(new Date().getMonth()); }} className="rounded-lg px-2 py-2 text-xs" style={{ background:"#fff", border:`1px solid ${GOLD}55`, color:GOLD }}>Hoy</button>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter size={15} color={GOLD} />
+            <select value={filterPerson} onChange={e=>setFilterPerson(e.target.value)} className="rounded-lg px-2 py-1.5 text-sm" style={{ background:"#fff", border:`1px solid ${GOLD}55`, color:DARK }}>
+              <option value="all">Todo el equipo</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <select value={filterTheme} onChange={e=>setFilterTheme(e.target.value)} className="rounded-lg px-2 py-1.5 text-sm" style={{ background:"#fff", border:`1px solid ${GOLD}55`, color:DARK }}>
+              <option value="all">Todos los temas</option>{themes.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}<option value="none">Sin tema</option>
+            </select>
+          </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Filter size={15} color={GOLD} />
-          <select value={filterPerson} onChange={e=>setFilterPerson(e.target.value)} className="rounded-lg px-2 py-1.5 text-sm" style={{ background:"#fff", border:`1px solid ${GOLD}55`, color:DARK }}>
-            <option value="all">Todo el equipo</option>{people.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <select value={filterTheme} onChange={e=>setFilterTheme(e.target.value)} className="rounded-lg px-2 py-1.5 text-sm" style={{ background:"#fff", border:`1px solid ${GOLD}55`, color:DARK }}>
-            <option value="all">Todos los temas</option>{themes.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}<option value="none">Sin tema</option>
-          </select>
-        </div>
-      </div>
+      )}
 
-      <div className="flex flex-wrap gap-3 mb-3 text-xs" style={{ color:DARK }}>
-        <span className="flex items-center gap-1"><Star size={12} color={GOLD} /> Día importante</span>
-        <span className="flex items-center gap-1"><Clock size={12} color={GOLD} /> Deadline</span>
-        <span style={{ color:GOLD }}>· Color de fondo = persona · Ícono/etiqueta = tema</span>
-      </div>
+      {view !== "minutas" && (
+        <div className="flex flex-wrap gap-3 mb-3 text-xs" style={{ color:DARK }}>
+          <span className="flex items-center gap-1"><Star size={12} color={GOLD} /> Día importante</span>
+          <span className="flex items-center gap-1"><Clock size={12} color={GOLD} /> Deadline</span>
+          <span style={{ color:GOLD }}>· Color de fondo = persona · Ícono/etiqueta = tema</span>
+        </div>
+      )}
 
       {view==="calendar" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -291,6 +297,8 @@ export default function Planner() {
           </div>
         </div>
       )}
+
+      {view==="minutas" && <Minutas events={events} />}
 
       {dayModal && (
         <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{ background:"#0006" }} onClick={()=>setDayModal(null)}>

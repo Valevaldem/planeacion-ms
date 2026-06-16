@@ -85,6 +85,38 @@ function MonthGrid({ year, month, events, colorsOf, catById, themeById, onDayCli
   );
 }
 
+function ManagerModal({ title, icon, list, onName, onColor, onIcon, onDel, nName, setNName, nColor, setNColor, nIcon, setNIcon, onAdd, addPlaceholder, onClose, renameable }: any) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{ background:"#0006" }} onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-5" onClick={e=>e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3"><h2 className="font-semibold flex items-center gap-2" style={{ color:DARK }}>{icon} {title}</h2><button onClick={onClose}><X size={18} color={DARK} /></button></div>
+        <div className="flex flex-col gap-2 mb-4">{list.map((t:any)=>(
+          <div key={t.id} className="rounded-lg p-2" style={{ background:CREAM }}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full shrink-0" style={{ background:t.color }}><Ico name={t.icon} size={14} color="#fff" /></span>
+              {renameable
+                ? <input defaultValue={t.name} onBlur={e=>{ const v=e.target.value.trim(); if(v && v!==t.name) onName(t.id,v); }} className="flex-1 text-sm font-medium bg-transparent outline-none rounded px-1 py-0.5" style={{ color:DARK }} title="Click para renombrar" />
+                : <span className="flex-1 text-sm font-medium" style={{ color:DARK }}>{t.name}</span>}
+              <select value={t.icon} onChange={e=>onIcon(t.id,e.target.value)} className="rounded-lg px-1 py-1 text-xs" style={{ background:"#fff", color:DARK, border:`1px solid ${GOLD}55` }}>{ICON_KEYS.map(k=><option key={k} value={k}>{k}</option>)}</select>
+              <button onClick={()=>onDel(t.id)}><Trash2 size={14} color="#C77966" /></button>
+            </div>
+            <div className="flex gap-1 flex-wrap items-center">{PALETTE.map(c=><button key={c} onClick={()=>onColor(t.id,c)} className="w-4 h-4 rounded-full" style={{ background:c, outline:t.color===c?`2px solid ${DARK}`:"none", outlineOffset:"1px" }} />)}<input type="color" value={t.color} onChange={e=>onColor(t.id,e.target.value)} title="Color personalizado" className="w-5 h-5 rounded cursor-pointer p-0" style={{ border:`1px solid ${GOLD}55`, background:"transparent" }} /></div>
+          </div>))}
+        </div>
+        <div className="flex flex-col gap-2 pt-2" style={{ borderTop:`1px solid ${GOLD}22` }}>
+          <p className="text-xs font-medium" style={{ color:GOLD }}>Agregar</p>
+          <div className="flex gap-2">
+            <input value={nName} onChange={e=>setNName(e.target.value)} placeholder={addPlaceholder} className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ background:CREAM, color:DARK }} />
+            <select value={nIcon} onChange={e=>setNIcon(e.target.value)} className="rounded-lg px-2 py-2 text-xs" style={{ background:CREAM, color:DARK }}>{ICON_KEYS.map(k=><option key={k} value={k}>{k}</option>)}</select>
+          </div>
+          <div className="flex flex-wrap gap-1.5 items-center">{PALETTE.map(c=><button key={c} onClick={()=>setNColor(c)} className="w-6 h-6 rounded-full" style={{ background:c, outline:nColor===c?`2px solid ${DARK}`:"none", outlineOffset:"2px" }} />)}<input type="color" value={nColor} onChange={e=>setNColor(e.target.value)} title="Color personalizado" className="w-7 h-7 rounded cursor-pointer p-0" style={{ border:`1px solid ${GOLD}55`, background:"transparent" }} /></div>
+          <button onClick={onAdd} className="rounded-xl py-2 text-sm font-medium text-white flex items-center justify-center gap-1" style={{ background:GOLD }}><Plus size={15} /> Agregar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Planner() {
   const [people, setPeople] = useState<any[]>([]);
   const [cats, setCats] = useState<any[]>([]);
@@ -241,36 +273,6 @@ export default function Planner() {
     groups = Object.keys(map).sort().map(key=>({ key, monthLabel:`${MONTHS[Number(key.split("-")[1])-1]} ${key.split("-")[0]}`, items:map[key] }));
   }
   const dayEvents = dayModal ? visibleEvents.filter(e=>inRange(e,dayModal)) : [];
-
-  const ManagerModal = ({ title, icon, list, onName, onColor, onIcon, onDel, nName, setNName, nColor, setNColor, nIcon, setNIcon, onAdd, addPlaceholder, onClose, renameable }: any) => (
-    <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{ background:"#0006" }} onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-5" onClick={e=>e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-3"><h2 className="font-semibold flex items-center gap-2" style={{ color:DARK }}>{icon} {title}</h2><button onClick={onClose}><X size={18} color={DARK} /></button></div>
-        <div className="flex flex-col gap-2 mb-4">{list.map((t:any)=>(
-          <div key={t.id} className="rounded-lg p-2" style={{ background:CREAM }}>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full shrink-0" style={{ background:t.color }}><Ico name={t.icon} size={14} color="#fff" /></span>
-              {renameable
-                ? <input defaultValue={t.name} onBlur={e=>{ const v=e.target.value.trim(); if(v && v!==t.name) onName(t.id,v); }} className="flex-1 text-sm font-medium bg-transparent outline-none rounded px-1 py-0.5" style={{ color:DARK }} title="Click para renombrar" />
-                : <span className="flex-1 text-sm font-medium" style={{ color:DARK }}>{t.name}</span>}
-              <select value={t.icon} onChange={e=>onIcon(t.id,e.target.value)} className="rounded-lg px-1 py-1 text-xs" style={{ background:"#fff", color:DARK, border:`1px solid ${GOLD}55` }}>{ICON_KEYS.map(k=><option key={k} value={k}>{k}</option>)}</select>
-              <button onClick={()=>onDel(t.id)}><Trash2 size={14} color="#C77966" /></button>
-            </div>
-            <div className="flex gap-1 flex-wrap items-center">{PALETTE.map(c=><button key={c} onClick={()=>onColor(t.id,c)} className="w-4 h-4 rounded-full" style={{ background:c, outline:t.color===c?`2px solid ${DARK}`:"none", outlineOffset:"1px" }} />)}<input type="color" value={t.color} onChange={e=>onColor(t.id,e.target.value)} title="Color personalizado" className="w-5 h-5 rounded cursor-pointer p-0" style={{ border:`1px solid ${GOLD}55`, background:"transparent" }} /></div>
-          </div>))}
-        </div>
-        <div className="flex flex-col gap-2 pt-2" style={{ borderTop:`1px solid ${GOLD}22` }}>
-          <p className="text-xs font-medium" style={{ color:GOLD }}>Agregar</p>
-          <div className="flex gap-2">
-            <input value={nName} onChange={e=>setNName(e.target.value)} placeholder={addPlaceholder} className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ background:CREAM, color:DARK }} />
-            <select value={nIcon} onChange={e=>setNIcon(e.target.value)} className="rounded-lg px-2 py-2 text-xs" style={{ background:CREAM, color:DARK }}>{ICON_KEYS.map(k=><option key={k} value={k}>{k}</option>)}</select>
-          </div>
-          <div className="flex flex-wrap gap-1.5 items-center">{PALETTE.map(c=><button key={c} onClick={()=>setNColor(c)} className="w-6 h-6 rounded-full" style={{ background:c, outline:nColor===c?`2px solid ${DARK}`:"none", outlineOffset:"2px" }} />)}<input type="color" value={nColor} onChange={e=>setNColor(e.target.value)} title="Color personalizado" className="w-7 h-7 rounded cursor-pointer p-0" style={{ border:`1px solid ${GOLD}55`, background:"transparent" }} /></div>
-          <button onClick={onAdd} className="rounded-xl py-2 text-sm font-medium text-white flex items-center justify-center gap-1" style={{ background:GOLD }}><Plus size={15} /> Agregar</button>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <div style={{ background:CREAM, fontFamily:"system-ui, sans-serif", minHeight:"100vh" }} className="p-3 sm:p-5">

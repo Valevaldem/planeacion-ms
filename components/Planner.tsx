@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import Minutas from "@/components/Minutas";
 import { ChevronLeft, ChevronRight, Plus, X, Star, Clock, CheckSquare, Users, Calendar as CalIcon, List, Trash2, Pencil, Filter, Check, Tag, Megaphone, Hammer, Truck, ShoppingBag, PartyPopper, Cpu, Briefcase, Gem, Camera, Sparkles, Package, Wrench, Flag, Globe, Heart, Bookmark } from "lucide-react";
 
-const GOLD = "#B08D57", CREAM = "#F5F0E8", DARK = "#2A2A2A";
+const GOLD = "#B08D57", CREAM = "#F5F0E8", DARK = "#2A2A2A", NEUTRAL = "#9A958C";
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const MONTHS_S = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const WD = ["L","M","M","J","V","S","D"];
@@ -33,14 +33,6 @@ const inRange = (e:any,k:string) => e.date <= k && k <= endOf(e);
 const dayCount = (e:any) => { const a=new Date(e.date), b=new Date(endOf(e)); return Math.round((+b-+a)/86400000)+1; };
 const shortDate = (k:string) => { const [,m,d]=k.split("-").map(Number); return `${d} ${MONTHS_S[m-1]}`; };
 
-function colorsToBg(colors:string[]) {
-  if (!colors || colors.length===0) return "#bbb";
-  if (colors.length===1) return colors[0];
-  const step = 100/colors.length;
-  const stops = colors.map((c,i)=>`${c} ${(i*step).toFixed(2)}% ${((i+1)*step).toFixed(2)}%`).join(", ");
-  return `linear-gradient(135deg, ${stops})`;
-}
-
 function MonthGrid({ year, month, events, colorsOf, themeById, onDayClick }: any) {
   const firstDow = (new Date(year,month,1).getDay()+6)%7;
   const days = new Date(year,month+1,0).getDate();
@@ -66,16 +58,19 @@ function MonthGrid({ year, month, events, colorsOf, themeById, onDayClick }: any
                 {dayEv.slice(0,3).map((e:any)=>{
                   const multi = endOf(e)!==e.date, start = e.date===k, end = endOf(e)===k;
                   const th = themeById(e.theme_id);
+                  const thColor = th ? th.color : NEUTRAL;
+                  const pcs = colorsOf(e.person_ids);
                   const br = multi ? { borderTopLeftRadius:start?4:0, borderBottomLeftRadius:start?4:0, borderTopRightRadius:end?4:0, borderBottomRightRadius:end?4:0 } : { borderRadius:4 };
                   return (
                     <div key={e.id} className="truncate px-1 text-white flex items-center gap-0.5"
-                      style={{ background:colorsToBg(colorsOf(e.person_ids)), fontSize:"9px", lineHeight:"13px",
+                      style={{ background:thColor, fontSize:"9px", lineHeight:"13px",
                         borderLeft: e.type==="deadline"&&start?"3px solid #fff":"none", textShadow:"0 0 2px rgba(0,0,0,0.35)", ...br }}>
                       {start && th && <Ico name={th.icon} size={8} className="shrink-0" />}
                       {start && !th && e.type==="importante" && <Star size={8} className="shrink-0" />}
                       {start && !th && e.type==="deadline" && <Clock size={8} className="shrink-0" />}
                       <span className="truncate">{e.title}</span>
-                      {multi && !end && <ChevronRight size={8} className="ml-auto shrink-0" />}
+                      {start && pcs.length>0 && <span className="flex ml-auto shrink-0" style={{ gap:"1px" }}>{pcs.slice(0,3).map((c:string,idx:number)=><span key={idx} style={{ width:5, height:5, background:c, borderRadius:"9999px", border:"1px solid #fff" }} />)}</span>}
+                      {multi && !end && <ChevronRight size={8} className="shrink-0" />}
                     </div>
                   );
                 })}
@@ -145,13 +140,14 @@ export default function Planner() {
   const months:any[] = [];
   for (let i=0;i<6;i++){ let m=startM+i,y=startY; while(m>11){m-=12;y++;} months.push({y,m}); }
   const rangeLabel = `${MONTHS_S[months[0].m]} ${months[0].y} – ${MONTHS_S[months[5].m]} ${months[5].y}`;
-  const shift = (dir:number) => { let m=startM+dir*6,y=startY; while(m>11){m-=12;y++;} while(m<0){m+=12;y--;} setStartM(m); setStartY(y); };
+  const shift = (dir:number) => { let m=startM+dir,y=startY; while(m>11){m-=12;y++;} while(m<0){m+=12;y--;} setStartM(m); setStartY(y); };
 
   const visibleEvents = events.filter((e:any) =>
     (filterPerson==="all" || (e.person_ids||[]).includes(filterPerson)) &&
     (filterTheme==="all" || (e.theme_id||null) === (filterTheme==="none"?null:filterTheme)));
   const personById = (id:string) => people.find(p=>p.id===id);
   const themeById = (id:string) => themes.find(t=>t.id===id) || null;
+  const themeColorOf = (id:string) => themeById(id)?.color || NEUTRAL;
   const colorsOf = (ids:string[]) => (ids||[]).map(id=>personById(id)?.color).filter(Boolean) as string[];
   const namesOf = (ids:string[]) => (ids||[]).map(id=>personById(id)).filter(Boolean);
 
@@ -195,7 +191,7 @@ export default function Planner() {
     const TIcon = TYPES[e.type].icon; const ns = namesOf(e.person_ids); const multi = endOf(e)!==e.date;
     return (
       <div className="flex items-center gap-2 py-2" key={e.id}>
-        <div className="w-1.5 h-9 rounded-full shrink-0" style={{ background:colorsToBg(colorsOf(e.person_ids)) }} />
+        <div className="w-1.5 h-9 rounded-full shrink-0" style={{ background:themeColorOf(e.theme_id) }} />
         <div className="w-24 shrink-0 text-xs leading-tight" style={{ color:DARK }}>
           {multi ? <span>{shortDate(e.date)} <span style={{ color:GOLD }}>→</span> {shortDate(endOf(e))}<br /><span style={{ color:"#999" }}>{dayCount(e)} días</span></span> : shortDate(e.date)}
         </div>
@@ -263,10 +259,13 @@ export default function Planner() {
       )}
 
       {view !== "minutas" && (
-        <div className="flex flex-wrap gap-3 mb-3 text-xs" style={{ color:DARK }}>
-          <span className="flex items-center gap-1"><Star size={12} color={GOLD} /> Día importante</span>
-          <span className="flex items-center gap-1"><Clock size={12} color={GOLD} /> Deadline</span>
-          <span style={{ color:GOLD }}>· Color de fondo = persona · Ícono/etiqueta = tema</span>
+        <div className="flex flex-wrap gap-3 mb-3 text-xs items-center" style={{ color:DARK }}>
+          <span style={{ color:GOLD }}>Color = tema · Puntos = responsables ·</span>
+          {themes.map(t=>(
+            <span key={t.id} className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full inline-block" style={{ background:t.color }} /> {t.name}
+            </span>
+          ))}
         </div>
       )}
 
@@ -308,7 +307,7 @@ export default function Planner() {
               <div className="mb-4 flex flex-col gap-1.5">
                 {dayEvents.map((e:any)=>{ const TIcon=TYPES[e.type].icon; const multi=endOf(e)!==e.date; return (
                   <div key={e.id} className="flex items-center gap-2 rounded-lg p-2" style={{ background:CREAM }}>
-                    <div className="w-1.5 h-6 rounded-full" style={{ background:colorsToBg(colorsOf(e.person_ids)) }} />
+                    <div className="w-1.5 h-6 rounded-full" style={{ background:themeColorOf(e.theme_id) }} />
                     <TIcon size={13} color={GOLD} />
                     <div className="flex-1 min-w-0">
                       <span className="text-sm truncate block" style={{ color:DARK }}>{e.title}{multi && <span className="text-xs ml-1" style={{ color:GOLD }}>· {shortDate(e.date)}→{shortDate(endOf(e))}</span>}</span>
@@ -325,7 +324,7 @@ export default function Planner() {
               <input value={fTitle} onChange={e=>setFTitle(e.target.value)} placeholder="¿Qué pasa este día?" className="rounded-lg px-3 py-2 text-sm outline-none" style={{ background:CREAM, color:DARK }} />
               <select value={fType} onChange={e=>setFType(e.target.value)} className="rounded-lg px-2 py-2 text-sm" style={{ background:CREAM, color:DARK }}>{Object.entries(TYPES).map(([k,v]:any)=><option key={k} value={k}>{v.label}</option>)}</select>
               <div>
-                <p className="text-xs mb-1" style={{ color:DARK }}>Tema</p>
+                <p className="text-xs mb-1" style={{ color:DARK }}>Tema (define el color)</p>
                 <div className="flex flex-wrap gap-1.5">{themes.map(t=>{ const on=fTheme===t.id; return (
                   <button key={t.id} onClick={()=>setFTheme(on?null:t.id)} className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs transition" style={{ background:on?t.color:"#fff", color:on?"#fff":t.color, border:`1.5px solid ${t.color}` }}><Ico name={t.icon} size={11} /> {t.name}</button>); })}</div>
               </div>
@@ -335,7 +334,7 @@ export default function Planner() {
                 {fEnd && <button onClick={()=>setFEnd("")} className="rounded-lg px-2 py-2 text-xs mb-0.5" style={{ background:CREAM, color:GOLD }}>1 día</button>}
               </div>
               <div>
-                <p className="text-xs mb-1" style={{ color:DARK }}>Asignar a {fPersons.length>0 && <span style={{ color:GOLD }}>({fPersons.length})</span>}</p>
+                <p className="text-xs mb-1" style={{ color:DARK }}>Responsable(s) {fPersons.length>0 && <span style={{ color:GOLD }}>({fPersons.length})</span>}</p>
                 <div className="flex flex-wrap gap-1.5">{people.map(p=>{ const on=fPersons.includes(p.id); return (
                   <button key={p.id} onClick={()=>togglePerson(p.id)} className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs transition" style={{ background:on?p.color:"#fff", color:on?"#fff":DARK, border:`1.5px solid ${p.color}` }}>{on?<Check size={11} />:<span className="w-2.5 h-2.5 rounded-full" style={{ background:p.color }} />}{p.name}</button>); })}</div>
               </div>
@@ -361,16 +360,16 @@ export default function Planner() {
                   <select value={t.icon} onChange={e=>setThIcon(t.id,e.target.value)} className="rounded-lg px-1 py-1 text-xs" style={{ background:"#fff", color:DARK, border:`1px solid ${GOLD}55` }}>{ICON_KEYS.map(k=><option key={k} value={k}>{k}</option>)}</select>
                   <button onClick={()=>delTheme(t.id)}><Trash2 size={14} color="#C77966" /></button>
                 </div>
-                <div className="flex gap-1 flex-wrap">{PALETTE.map(c=><button key={c} onClick={()=>setThColor(t.id,c)} className="w-4 h-4 rounded-full" style={{ background:c, outline:t.color===c?`2px solid ${DARK}`:"none", outlineOffset:"1px" }} />)}</div>
+                <div className="flex gap-1 flex-wrap items-center">{PALETTE.map(c=><button key={c} onClick={()=>setThColor(t.id,c)} className="w-4 h-4 rounded-full" style={{ background:c, outline:t.color===c?`2px solid ${DARK}`:"none", outlineOffset:"1px" }} />)}<input type="color" value={t.color} onChange={e=>setThColor(t.id,e.target.value)} title="Color personalizado" className="w-5 h-5 rounded cursor-pointer p-0" style={{ border:`1px solid ${GOLD}55`, background:"transparent" }} /></div>
               </div>))}
             </div>
             <div className="flex flex-col gap-2 pt-2" style={{ borderTop:`1px solid ${GOLD}22` }}>
               <p className="text-xs font-medium" style={{ color:GOLD }}>Agregar tema</p>
               <div className="flex gap-2">
-                <input value={newThName} onChange={e=>setNewThName(e.target.value)} placeholder="Nombre del tema" className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ background:CREAM, color:DARK }} />
+                <input value={newThName} onChange={e=>setNewThName(e.target.value)} placeholder="Nombre del tema (ej. Navidad)" className="flex-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ background:CREAM, color:DARK }} />
                 <select value={newThIcon} onChange={e=>setNewThIcon(e.target.value)} className="rounded-lg px-2 py-2 text-xs" style={{ background:CREAM, color:DARK }}>{ICON_KEYS.map(k=><option key={k} value={k}>{k}</option>)}</select>
               </div>
-              <div className="flex flex-wrap gap-1.5">{PALETTE.map(c=><button key={c} onClick={()=>setNewThColor(c)} className="w-6 h-6 rounded-full" style={{ background:c, outline:newThColor===c?`2px solid ${DARK}`:"none", outlineOffset:"2px" }} />)}</div>
+              <div className="flex flex-wrap gap-1.5 items-center">{PALETTE.map(c=><button key={c} onClick={()=>setNewThColor(c)} className="w-6 h-6 rounded-full" style={{ background:c, outline:newThColor===c?`2px solid ${DARK}`:"none", outlineOffset:"2px" }} />)}<input type="color" value={newThColor} onChange={e=>setNewThColor(e.target.value)} title="Color personalizado" className="w-7 h-7 rounded cursor-pointer p-0" style={{ border:`1px solid ${GOLD}55`, background:"transparent" }} /></div>
               <button onClick={addTheme} className="rounded-xl py-2 text-sm font-medium text-white flex items-center justify-center gap-1" style={{ background:GOLD }}><Plus size={15} /> Agregar tema</button>
             </div>
           </div>
@@ -385,14 +384,14 @@ export default function Planner() {
               <div key={p.id} className="flex items-center gap-2 rounded-lg p-2" style={{ background:CREAM }}>
                 <div className="w-5 h-5 rounded-full shrink-0" style={{ background:p.color }} />
                 <span className="flex-1 text-sm" style={{ color:DARK }}>{p.name}</span>
-                <div className="flex gap-1 flex-wrap justify-end">{PALETTE.map(c=><button key={c} onClick={()=>setPColor(p.id,c)} className="w-4 h-4 rounded-full" style={{ background:c, outline:p.color===c?`2px solid ${DARK}`:"none", outlineOffset:"1px" }} />)}</div>
+                <div className="flex gap-1 flex-wrap justify-end items-center">{PALETTE.map(c=><button key={c} onClick={()=>setPColor(p.id,c)} className="w-4 h-4 rounded-full" style={{ background:c, outline:p.color===c?`2px solid ${DARK}`:"none", outlineOffset:"1px" }} />)}<input type="color" value={p.color} onChange={e=>setPColor(p.id,e.target.value)} title="Color personalizado" className="w-5 h-5 rounded cursor-pointer p-0" style={{ border:`1px solid ${GOLD}55`, background:"transparent" }} /></div>
                 <button onClick={()=>delPerson(p.id)}><Trash2 size={14} color="#C77966" /></button>
               </div>))}
             </div>
             <div className="flex flex-col gap-2 pt-2" style={{ borderTop:`1px solid ${GOLD}22` }}>
               <p className="text-xs font-medium" style={{ color:GOLD }}>Agregar persona</p>
               <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="Nombre" className="rounded-lg px-3 py-2 text-sm outline-none" style={{ background:CREAM, color:DARK }} />
-              <div className="flex flex-wrap gap-1.5">{PALETTE.map(c=><button key={c} onClick={()=>setNewColor(c)} className="w-6 h-6 rounded-full" style={{ background:c, outline:newColor===c?`2px solid ${DARK}`:"none", outlineOffset:"2px" }} />)}</div>
+              <div className="flex flex-wrap gap-1.5 items-center">{PALETTE.map(c=><button key={c} onClick={()=>setNewColor(c)} className="w-6 h-6 rounded-full" style={{ background:c, outline:newColor===c?`2px solid ${DARK}`:"none", outlineOffset:"2px" }} />)}<input type="color" value={newColor} onChange={e=>setNewColor(e.target.value)} title="Color personalizado" className="w-7 h-7 rounded cursor-pointer p-0" style={{ border:`1px solid ${GOLD}55`, background:"transparent" }} /></div>
               <button onClick={addPerson} className="rounded-xl py-2 text-sm font-medium text-white flex items-center justify-center gap-1" style={{ background:GOLD }}><Plus size={15} /> Agregar al equipo</button>
             </div>
           </div>

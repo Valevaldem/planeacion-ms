@@ -214,6 +214,7 @@ export default function Planner() {
   const addPerson = async () => { if(!newName.trim()) return; await supabase.from("people").insert({ name:newName.trim(), color:newColor }); setNewName(""); setNewColor(PALETTE[people.length%PALETTE.length]); await fetchPeople(); };
   const delPerson = async (id:string) => { await supabase.from("people").delete().eq("id",id); await fetchPeople(); };
   const setPColor = async (id:string,c:string) => { await supabase.from("people").update({color:c}).eq("id",id); await fetchPeople(); };
+  const setPName = async (id:string,name:string) => { await supabase.from("people").update({name}).eq("id",id); await fetchPeople(); };
 
   const addCat = async () => { if(!newCatName.trim()) return; await supabase.from("categories").insert({ name:newCatName.trim(), color:newCatColor, icon:newCatIcon }); setNewCatName(""); setNewCatColor(PALETTE[(cats.length+2)%PALETTE.length]); setNewCatIcon("Tag"); await fetchCats(); };
   const delCat = async (id:string) => { await supabase.from("categories").delete().eq("id",id); await fetchCats(); await fetchEvents(); };
@@ -425,7 +426,7 @@ export default function Planner() {
             <div className="flex flex-col gap-2 mb-4">{people.map(p=>(
               <div key={p.id} className="flex items-center gap-2 rounded-lg p-2" style={{ background:CREAM }}>
                 <div className="w-5 h-5 rounded-full shrink-0" style={{ background:p.color }} />
-                <span className="flex-1 text-sm" style={{ color:DARK }}>{p.name}</span>
+                <input defaultValue={p.name} onBlur={e=>{ const v=e.target.value.trim(); if(v && v!==p.name) setPName(p.id,v); }} className="flex-1 text-sm bg-transparent outline-none rounded px-1 py-0.5" style={{ color:DARK }} title="Click para renombrar" />
                 <div className="flex gap-1 flex-wrap justify-end items-center">{PALETTE.map(c=><button key={c} onClick={()=>setPColor(p.id,c)} className="w-4 h-4 rounded-full" style={{ background:c, outline:p.color===c?`2px solid ${DARK}`:"none", outlineOffset:"1px" }} />)}<input type="color" value={p.color} onChange={e=>setPColor(p.id,e.target.value)} title="Color personalizado" className="w-5 h-5 rounded cursor-pointer p-0" style={{ border:`1px solid ${GOLD}55`, background:"transparent" }} /></div>
                 <button onClick={()=>delPerson(p.id)}><Trash2 size={14} color="#C77966" /></button>
               </div>))}
